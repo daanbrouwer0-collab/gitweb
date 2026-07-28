@@ -14,5 +14,13 @@
     "excerpt": "De site sorteert op datum en heeft een zoekveld.",
     "url": "",
     "content": "Laat url leeg als je geen link wilt tonen."
+  },
+    {
+    "id": "2026-07-20-demo-2",
+    "title": "Derde bericht",
+    "date": "2026-07-20",
+    "excerpt": "test",
+    "url": "",
+    "content": "Laat url leeg als je geen link wilt tonen."
   }
 ]
