@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Nieuws</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <header class="header">
+      <div class="container">
+        <h1 class="title">Nieuws</h1>
+        <p class="subtitle">Berichten worden geladen uit <span class="mono">news.json</span> op GitHub.</p>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="toolbar" aria-label="Filters">
+        <label class="search">
+          <span class="sr-only">Zoeken</span>
+          <input id="searchInput" type="search" placeholder="Zoek in titel of tekst…" autocomplete="off" />
+        </label>
+        <div class="meta">
+          <span id="countLabel" class="count">—</span>
+          <a
+            class="link"
+            href="https://github.com/daanbrouwer0-collab/gitweb/blob/main/news.json"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Bekijk data
+          </a>
+        </div>
+      </section>
+
+      <section aria-label="Nieuwsberichten">
+        <div id="status" class="status" role="status" aria-live="polite"></div>
+        <div id="newsList" class="grid"></div>
+      </section>
+    </main>
+
+    <template id="newsCardTemplate">
+      <article class="card">
+        <div class="card-top">
+          <h2 class="card-title"></h2>
+          <p class="card-date"></p>
+        </div>
+        <p class="card-excerpt"></p>
+        <div class="card-actions">
+          <a class="button button-primary card-link" target="_blank" rel="noreferrer">Open</a>
+        </div>
+      </article>
+    </template>
+
+    <script src="./app.js" defer></script>
+  </body>
+</html>
