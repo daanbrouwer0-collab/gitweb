@@ -14,5 +14,13 @@
     "excerpt": "De lijst wordt automatisch gesorteerd op datum (nieuwste eerst) en je kunt zoeken.",
     "url": "",
     "content": "Laat 'url' leeg als je geen externe link wilt tonen; dan blijft de knop uit."
+  },
+    {
+    "id": "2026-07-20-demo-3",
+    "title": "derde bericht (voorbeeld)",
+    "date": "2026-07-20",
+    "excerpt": "Test",
+    "url": "",
+    "content": "Laat 'url' leeg als je geen externe link wilt tonen; dan blijft de knop uit."
   }
 ]
