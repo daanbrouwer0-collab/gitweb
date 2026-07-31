@@ -184,3 +184,75 @@ input[type="search"] {
   clip: rect(0, 0, 0, 0);
   border: 0;
 }
+
+.footer {
+  border-top: 1px solid var(--border);
+  padding: 24px 0 40px;
+  margin-top: 8px;
+}
+
+.footer-inner {
+  display: flex;
+  justify-content: center;
+}
+
+.footer .button {
+  min-width: 160px;
+  cursor: pointer;
+}
+
+.dialog {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+  color: var(--text);
+  padding: 0;
+  width: min(480px, calc(100% - 32px));
+  box-shadow: 0 20px 50px var(--shadow);
+}
+
+.dialog::backdrop {
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.dialog-form {
+  display: grid;
+  gap: 12px;
+  padding: 20px;
+}
+
+.dialog-title {
+  margin: 0 0 4px;
+  font-size: 20px;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.field input,
+.field textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+  color: var(--text);
+  padding: 10px 12px;
+  border-radius: 12px;
+  outline: none;
+  font: inherit;
+  resize: vertical;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.dialog-actions .button {
+  cursor: pointer;
+}

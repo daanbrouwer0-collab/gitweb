@@ -64,6 +64,40 @@ function ensureLayout() {
         <div id="newsList" class="grid"></div>
       </section>
     </main>
+    <footer class="footer">
+      <div class="container footer-inner">
+        <button type="button" id="addNewsBtn" class="button button-primary">Add nieuws</button>
+      </div>
+    </footer>
+    <dialog id="addNewsDialog" class="dialog">
+      <form id="addNewsForm" method="dialog" class="dialog-form">
+        <h2 class="dialog-title">Nieuw bericht</h2>
+        <label class="field">
+          <span>Titel</span>
+          <input name="title" type="text" required autocomplete="off" />
+        </label>
+        <label class="field">
+          <span>Datum</span>
+          <input name="date" type="date" required />
+        </label>
+        <label class="field">
+          <span>Samenvatting</span>
+          <textarea name="excerpt" rows="2"></textarea>
+        </label>
+        <label class="field">
+          <span>Link (optioneel)</span>
+          <input name="url" type="url" placeholder="https://" autocomplete="off" />
+        </label>
+        <label class="field">
+          <span>Inhoud</span>
+          <textarea name="content" rows="4"></textarea>
+        </label>
+        <div class="dialog-actions">
+          <button type="button" id="cancelAddNews" class="button">Annuleren</button>
+          <button type="submit" class="button button-primary">Toevoegen</button>
+        </div>
+      </form>
+    </dialog>
   `;
 }
 
@@ -148,14 +182,14 @@ function sortNews(items) {
   return [...items].sort((a, b) => toDateValue(b.date) - toDateValue(a.date));
 }
 
-function wireSearch(allItems) {
+function wireSearch(getItems) {
   const input = document.getElementById("searchInput");
   if (!(input instanceof HTMLInputElement)) return;
 
-  const total = allItems.length;
-  let lastValue = "";
+  let lastValue = null;
 
   function applyFilter() {
+    const allItems = getItems();
     const q = normalize(input.value);
     if (q === lastValue) return;
     lastValue = q;
@@ -169,28 +203,98 @@ function wireSearch(allItems) {
           });
 
     renderNews(filtered);
-    setCountLabel(filtered.length, total);
+    setCountLabel(filtered.length, allItems.length);
     setStatus(filtered.length === 0 ? "Geen berichten gevonden." : "");
   }
 
   input.addEventListener("input", applyFilter);
   applyFilter();
+
+  return () => {
+    lastValue = null;
+    applyFilter();
+  };
+}
+
+function slugify(text) {
+  return normalize(text)
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 40);
+}
+
+function downloadNewsJson(items) {
+  const blob = new Blob([`${JSON.stringify(items, null, 2)}\n`], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "news.json";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function wireAddNews(getItems, setItems, refresh) {
+  const btn = document.getElementById("addNewsBtn");
+  const dialog = document.getElementById("addNewsDialog");
+  const form = document.getElementById("addNewsForm");
+  const cancel = document.getElementById("cancelAddNews");
+
+  if (!(btn && dialog instanceof HTMLDialogElement && form instanceof HTMLFormElement)) return;
+
+  btn.addEventListener("click", () => {
+    const dateInput = form.elements.namedItem("date");
+    if (dateInput instanceof HTMLInputElement && !dateInput.value) {
+      dateInput.value = new Date().toISOString().slice(0, 10);
+    }
+    dialog.showModal();
+  });
+
+  cancel?.addEventListener("click", () => dialog.close());
+
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+
+    const data = new FormData(form);
+    const title = escapeText(data.get("title")).trim();
+    const date = escapeText(data.get("date")).trim();
+    const excerpt = escapeText(data.get("excerpt")).trim();
+    const url = escapeText(data.get("url")).trim();
+    const content = escapeText(data.get("content")).trim();
+
+    if (!title || !date) return;
+
+    const id = `${date}-${slugify(title) || "bericht"}`;
+    const next = sortNews([{ id, title, date, excerpt, url, content }, ...getItems()]);
+    setItems(next);
+    downloadNewsJson(next);
+    form.reset();
+    dialog.close();
+    refresh();
+    setStatus("Bericht toegevoegd. Download news.json en commit die naar de repo.");
+  });
 }
 
 async function main() {
   ensureLayout();
 
+  let items = [];
+  const getItems = () => items;
+  const setItems = (next) => {
+    items = next;
+  };
+
   try {
     const raw = await loadNews();
-    const items = sortNews(raw);
-    renderNews(items);
-    setCountLabel(items.length, items.length);
+    items = sortNews(raw);
+    const refresh = wireSearch(getItems);
+    wireAddNews(getItems, setItems, refresh);
     setStatus(items.length === 0 ? "Nog geen nieuwsberichten." : "");
-    wireSearch(items);
   } catch (err) {
     setStatus("Kon nieuws niet laden. Controleer of news.json bestaat en geldig JSON is.");
     const list = document.getElementById("newsList");
     if (list) list.replaceChildren();
+    const refresh = wireSearch(getItems);
+    wireAddNews(getItems, setItems, refresh);
   }
 }
 
