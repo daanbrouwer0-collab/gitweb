@@ -15,12 +15,84 @@
     "url": "",
     "content": "Laat url leeg als je geen link wilt tonen."
   },
-    {
-    "id": "2026-07-20-demo-2",
+  {
+    "id": "2026-07-20-demo-3",
     "title": "Derde bericht",
     "date": "2026-07-20",
     "excerpt": "test",
     "url": "",
     "content": "Laat url leeg als je geen link wilt tonen."
+  },
+  {
+    "id": "2026-07-31-zoektest",
+    "title": "Zoeken werkt met trefwoorden",
+    "date": "2026-07-31",
+    "excerpt": "Typ 'trefwoorden' in het zoekveld om dit bericht te filteren.",
+    "url": "",
+    "content": "Dit bericht is bedoeld om de zoekfunctie te testen met unieke woorden."
+  },
+  {
+    "id": "2026-07-30-release",
+    "title": "Nieuwe release online",
+    "date": "2026-07-30",
+    "excerpt": "Versie met Add nieuws-knop staat nu op GitHub.",
+    "url": "https://github.com/daanbrouwer0-collab/gitweb",
+    "content": "Onderaan de site kun je via Add nieuws een nieuw bericht toevoegen en news.json downloaden."
+  },
+  {
+    "id": "2026-07-29-tips",
+    "title": "Tips voor nieuwsberichten",
+    "date": "2026-07-29",
+    "excerpt": "Korte samenvatting, duidelijke titel, optionele link.",
+    "url": "",
+    "content": "Gebruik een duidelijke titel en een korte excerpt. De content mag langer zijn voor details."
+  },
+  {
+    "id": "2026-07-25-update",
+    "title": "Weekupdate: wat is er veranderd",
+    "date": "2026-07-25",
+    "excerpt": "Overzicht van kleine verbeteringen aan de nieuwssite.",
+    "url": "https://example.com/update",
+    "content": "Layout, sortering op datum en filters zijn getest met meerdere berichten."
+  },
+  {
+    "id": "2026-07-22-evenement",
+    "title": "Demo-evenement volgende week",
+    "date": "2026-07-22",
+    "excerpt": "Testbericht met een externe link naar een evenementpagina.",
+    "url": "https://example.com/event",
+    "content": "Dit bericht controleert of de Open-knop correct naar een URL verwijst."
+  },
+  {
+    "id": "2026-07-18-archief",
+    "title": "Ouder archiefbericht",
+    "date": "2026-07-18",
+    "excerpt": "Lager in de lijst door een oudere datum.",
+    "url": "",
+    "content": "Handig om te zien of sortering van nieuw naar oud klopt."
+  },
+  {
+    "id": "2026-07-15-lang",
+    "title": "Bericht met langere tekst",
+    "date": "2026-07-15",
+    "excerpt": "",
+    "url": "",
+    "content": "Dit bericht heeft geen aparte excerpt. De site maakt dan automatisch een korte samenvatting van de inhoud, zodat je kunt zien of die fallback goed werkt bij langere content zonder handmatige excerpt."
+  },
+  {
+    "id": "2026-07-10-leeg-url",
+    "title": "Bericht zonder link",
+    "date": "2026-07-10",
+    "excerpt": "Controleert de 'Geen link'-staat in de UI.",
+    "url": "",
+    "content": "Als url leeg is, mag er geen werkende Open-link getoond worden."
+  },
+  {
+    "id": "2026-07-05-start",
+    "title": "Eerste testbericht uit juli",
+    "date": "2026-07-05",
+    "excerpt": "Vroegste bericht in deze testdata.",
+    "url": "https://example.com/start",
+    "content": "Gebruik dit om te checken of het onderaan de gesorteerde lijst verschijnt."
   }
 ]
