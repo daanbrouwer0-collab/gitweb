@@ -137,7 +137,11 @@ function setCountLabel(visibleCount, totalCount) {
     visibleCount === totalCount ? `${totalCount} bericht(en)` : `${visibleCount} van ${totalCount} bericht(en)`;
 }
 
-function createNewsCard(item) {
+function sameNewsItem(a, b) {
+  return a === b || (a?.id && a.id === b?.id && a.title === b.title && a.date === b.date);
+}
+
+function createNewsCard(item, { onDelete } = {}) {
   const article = document.createElement("article");
   article.className = "card";
 
@@ -179,17 +183,27 @@ function createNewsCard(item) {
   }
 
   actions.appendChild(link);
+
+  if (typeof onDelete === "function") {
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "button button-danger";
+    removeBtn.textContent = "Verwijder";
+    removeBtn.addEventListener("click", () => onDelete(item, removeBtn));
+    actions.appendChild(removeBtn);
+  }
+
   article.append(top, excerpt, actions);
   return article;
 }
 
-function renderNews(items) {
+function renderNews(items, handlers = {}) {
   const list = document.getElementById("newsList");
   if (!list) return;
 
   list.replaceChildren();
   for (const item of items) {
-    list.appendChild(createNewsCard(item));
+    list.appendChild(createNewsCard(item, handlers));
   }
 }
 
@@ -240,7 +254,7 @@ function sortNews(items) {
   return [...items].sort((a, b) => toDateValue(b.date) - toDateValue(a.date));
 }
 
-function wireSearch(getItems) {
+function wireSearch(getItems, handlers = {}) {
   const input = document.getElementById("searchInput");
   if (!(input instanceof HTMLInputElement)) return;
 
@@ -260,9 +274,11 @@ function wireSearch(getItems) {
             return haystack.includes(q);
           });
 
-    renderNews(filtered);
+    renderNews(filtered, handlers);
     setCountLabel(filtered.length, allItems.length);
-    setStatus(filtered.length === 0 ? "Geen berichten gevonden." : "");
+    if (filtered.length === 0 && q.length > 0) {
+      setStatus("Geen berichten gevonden.");
+    }
   }
 
   input.addEventListener("input", applyFilter);
@@ -271,6 +287,37 @@ function wireSearch(getItems) {
   return () => {
     lastValue = null;
     applyFilter();
+  };
+}
+
+function wireDeleteNews(getItems, setItems, refresh) {
+  return async function onDelete(item, button) {
+    const label = escapeText(item.title || "dit bericht");
+    if (!window.confirm(`Weet je zeker dat je "${label}" wilt verwijderen?`)) return;
+
+    const previous = getItems();
+    const index = previous.findIndex((entry) => sameNewsItem(entry, item));
+    if (index < 0) return;
+
+    const next = previous.filter((_, i) => i !== index);
+    setItems(next);
+    refresh();
+    setStatus("Bericht verwijderen...");
+
+    if (button instanceof HTMLButtonElement) button.disabled = true;
+
+    try {
+      const result = await saveNews(next);
+      setStatus(
+        result.mode === "jsonbin"
+          ? "Bericht verwijderd en opgeslagen op JSONBin."
+          : "Bericht verwijderd. Download news.json en commit die naar de repo.",
+      );
+    } catch (err) {
+      setItems(previous);
+      refresh();
+      setStatus("Verwijderen mislukt. Controleer je JSONBin bin-id en API-key.");
+    }
   };
 }
 
@@ -364,10 +411,13 @@ async function main() {
     items = next;
   };
 
+  const onDelete = wireDeleteNews(getItems, setItems, () => refresh?.());
+  let refresh = null;
+
   try {
     const raw = await loadNews();
     items = sortNews(raw);
-    const refresh = wireSearch(getItems);
+    refresh = wireSearch(getItems, { onDelete });
     wireAddNews(getItems, setItems, refresh);
     setStatus(items.length === 0 ? "Nog geen nieuwsberichten." : "");
   } catch (err) {
@@ -378,7 +428,7 @@ async function main() {
     );
     const list = document.getElementById("newsList");
     if (list) list.replaceChildren();
-    const refresh = wireSearch(getItems);
+    refresh = wireSearch(getItems, { onDelete });
     wireAddNews(getItems, setItems, refresh);
   }
 }
