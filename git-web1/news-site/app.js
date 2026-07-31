@@ -4,12 +4,36 @@ const DEFAULT_CONFIG = {
   siteTitle: "Nieuws",
   siteSubtitle: "Berichten worden geladen uit news.json in deze repository.",
   mountSelector: "#news-site-root",
+  jsonBin: null,
 };
 
 const SITE_CONFIG = {
   ...DEFAULT_CONFIG,
   ...(window.NEWS_SITE_CONFIG || {}),
+  jsonBin: {
+    ...(DEFAULT_CONFIG.jsonBin || {}),
+    ...((window.NEWS_SITE_CONFIG && window.NEWS_SITE_CONFIG.jsonBin) || {}),
+  },
 };
+
+function getJsonBinConfig() {
+  const binId = escapeText(SITE_CONFIG.jsonBin?.binId).trim();
+  const apiKey = escapeText(SITE_CONFIG.jsonBin?.apiKey).trim();
+  if (!binId || !apiKey) return null;
+  if (binId.startsWith("PLAK_") || apiKey.startsWith("PLAK_")) return null;
+  // Access Key (aanbevolen) of Master Key; default: X-Master-Key
+  const keyHeader = escapeText(SITE_CONFIG.jsonBin?.keyHeader).trim() || "X-Master-Key";
+  return { binId, apiKey, keyHeader };
+}
+
+function jsonBinHeaders(jsonBin, withContentType = false) {
+  const headers = {
+    [jsonBin.keyHeader]: jsonBin.apiKey,
+    "X-Bin-Meta": "false",
+  };
+  if (withContentType) headers["Content-Type"] = "application/json";
+  return headers;
+}
 
 function toDateValue(dateString) {
   const d = new Date(dateString);
@@ -169,13 +193,47 @@ function renderNews(items) {
   }
 }
 
+function extractNewsArray(data) {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.record)) return data.record;
+  throw new Error("Nieuwsdata moet een JSON array zijn");
+}
+
 async function loadNews() {
   setStatus("Nieuws laden...");
+  const jsonBin = getJsonBinConfig();
+
+  if (jsonBin) {
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${jsonBin.binId}/latest`, {
+      cache: "no-store",
+      headers: jsonBinHeaders(jsonBin),
+    });
+    if (!res.ok) throw new Error(`Kon JSONBin niet laden (HTTP ${res.status})`);
+    return extractNewsArray(await res.json());
+  }
+
   const res = await fetch(SITE_CONFIG.newsUrl, { cache: "no-store" });
   if (!res.ok) throw new Error(`Kon news.json niet laden (HTTP ${res.status})`);
-  const data = await res.json();
-  if (!Array.isArray(data)) throw new Error("news.json moet een JSON array zijn");
-  return data;
+  return extractNewsArray(await res.json());
+}
+
+async function saveNews(items) {
+  const jsonBin = getJsonBinConfig();
+  if (!jsonBin) {
+    downloadNewsJson(items);
+    return { mode: "download" };
+  }
+
+  const res = await fetch(`https://api.jsonbin.io/v3/b/${jsonBin.binId}`, {
+    method: "PUT",
+    headers: jsonBinHeaders(jsonBin, true),
+    body: JSON.stringify(items),
+  });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    throw new Error(`Kon JSONBin niet opslaan (HTTP ${res.status})${detail ? `: ${detail}` : ""}`);
+  }
+  return { mode: "jsonbin" };
 }
 
 function sortNews(items) {
@@ -251,7 +309,7 @@ function wireAddNews(getItems, setItems, refresh) {
 
   cancel?.addEventListener("click", () => dialog.close());
 
-  form.addEventListener("submit", (event) => {
+  form.addEventListener("submit", async (event) => {
     event.preventDefault();
 
     const data = new FormData(form);
@@ -263,18 +321,41 @@ function wireAddNews(getItems, setItems, refresh) {
 
     if (!title || !date) return;
 
+    const submitBtn = form.querySelector('button[type="submit"]');
+    if (submitBtn instanceof HTMLButtonElement) submitBtn.disabled = true;
+    setStatus("Bericht opslaan...");
+
+    const previous = getItems();
     const id = `${date}-${slugify(title) || "bericht"}`;
-    const next = sortNews([{ id, title, date, excerpt, url, content }, ...getItems()]);
+    const next = sortNews([{ id, title, date, excerpt, url, content }, ...previous]);
     setItems(next);
-    downloadNewsJson(next);
-    form.reset();
-    dialog.close();
     refresh();
-    setStatus("Bericht toegevoegd. Download news.json en commit die naar de repo.");
+
+    try {
+      const result = await saveNews(next);
+      form.reset();
+      dialog.close();
+      setStatus(
+        result.mode === "jsonbin"
+          ? "Bericht toegevoegd en opgeslagen op JSONBin."
+          : "Bericht toegevoegd. Download news.json en commit die naar de repo.",
+      );
+    } catch (err) {
+      setItems(previous);
+      refresh();
+      setStatus("Opslaan mislukt. Controleer je JSONBin bin-id en API-key.");
+    } finally {
+      if (submitBtn instanceof HTMLButtonElement) submitBtn.disabled = false;
+    }
   });
 }
 
 async function main() {
+  const jsonBin = getJsonBinConfig();
+  if (jsonBin && (!SITE_CONFIG.dataLinkUrl || SITE_CONFIG.dataLinkUrl === DEFAULT_CONFIG.dataLinkUrl)) {
+    SITE_CONFIG.dataLinkUrl = `https://jsonbin.io/app/bins/${jsonBin.binId}`;
+  }
+
   ensureLayout();
 
   let items = [];
@@ -290,7 +371,11 @@ async function main() {
     wireAddNews(getItems, setItems, refresh);
     setStatus(items.length === 0 ? "Nog geen nieuwsberichten." : "");
   } catch (err) {
-    setStatus("Kon nieuws niet laden. Controleer of news.json bestaat en geldig JSON is.");
+    setStatus(
+      jsonBin
+        ? "Kon nieuws niet laden van JSONBin. Controleer bin-id en API-key."
+        : "Kon nieuws niet laden. Controleer of news.json bestaat en geldig JSON is.",
+    );
     const list = document.getElementById("newsList");
     if (list) list.replaceChildren();
     const refresh = wireSearch(getItems);
